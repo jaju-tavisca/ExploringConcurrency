@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.stream.Stream;
 
 public class Client implements AutoCloseable {
 	private Socket client;
@@ -46,29 +47,20 @@ public class Client implements AutoCloseable {
 	public static void main(String[] args) throws UnknownHostException, IOException, InterruptedException {
 		int port = 8080;
 		String host = "localhost";
-		new Thread(() ->  {
-			try (Client client = new Client(host, port)) {
-				client.sendReceive("HELO1");
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}).start();
-		new Thread(() ->  {
-			try (Client client = new Client(host, port)) {
-				client.sendReceive("HELO2");
-				Thread.sleep(2000);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			} catch (UnknownHostException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		}).start();
+		int totalClients = 4;
+		Stream.iterate(1, x -> x + 1).limit(totalClients).forEach(id -> {
+			new Thread(() -> {
+				try (Client client = new Client(host, port)) {
+					client.sendReceive("HELO" + id);
+					Thread.sleep(2000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				} catch (UnknownHostException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}).start();
+		});
 	}
 }
