@@ -6,9 +6,9 @@ rm -rfv *.class
 echo "***************************************"
 echo "Compiling..."
 echo "***************************************"
-javac `find . -type f -name "*.java"`
+javac -cp .:./lib/json-20180130.jar `find . -type f -name "*.java"`
 
 echo "***************************************"
 echo "Running..."
 echo "***************************************"
-java Portfolio
+java -cp .:./lib/json-20180130.jar Portfolio

@@ -13,7 +13,7 @@ public class Portfolio {
     stocks.put(ticker, oldQty + qty);
   }
 	
-  public Double netWorth(NationalStockService stockService) throws Exception {
+  public Double netWorth(StockService stockService) throws Exception {
     System.out.println("Stocks = " + stocks);
     // ForkJoinPool pool = new ForkJoinPool(10);
       // Future<Double> worth = pool.submit(() -> {
@@ -39,13 +39,16 @@ public class Portfolio {
   }
   
   public static void main(String[] args) throws Exception {
+    Thread.sleep(10000);
     Portfolio portfolio = new Portfolio();
     portfolio.add("GOOG", 10);
     portfolio.add("AAPL", 20);
     portfolio.add("YHOO", 30);
     portfolio.add("MSFT", 40);
     portfolio.add("ORCL", 40);
+    portfolio.add("AMZN", 50);
     portfolio.add("GOOG", 90);
+    // System.out.println("NetWorth = " + portfolio.netWorth(newFakeStockService()));
     System.out.println("NetWorth = " + portfolio.netWorth(new NationalStockService()));
   }
 }
