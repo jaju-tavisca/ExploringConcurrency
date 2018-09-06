@@ -18,6 +18,8 @@ public class Portfolio {
     // ForkJoinPool pool = new ForkJoinPool(10);
       // Future<Double> worth = pool.submit(() -> {
         long startTime = System.currentTimeMillis();
+        ThreadTimes tt = new ThreadTimes(75);  // 75ms interval
+        tt.start();
         List<Double> prices = stocks.entrySet()
     			.stream()
           // comment or uncomment the parallel() call below and see the difference
@@ -30,9 +32,12 @@ public class Portfolio {
             e.printStackTrace();
           }
         }, ArrayList::addAll);
+        double worth = prices.stream().reduce(0d, (a, e) -> a + e);
+        tt.interrupt();
+        tt.printAllThreadInfo();
         long timeTaken = System.currentTimeMillis() - startTime;
-        System.out.println(String.format("It took %d (ms)", timeTaken));
-        return prices.stream().reduce(0d, (a, e) -> a + e);
+        System.out.println(String.format("Overall Time %d(ms):", timeTaken));
+        return worth;
     //   });
     // pool.shutdown();
     // return worth.get();
@@ -48,7 +53,7 @@ public class Portfolio {
     portfolio.add("ORCL", 40);
     portfolio.add("AMZN", 50);
     portfolio.add("GOOG", 90);
-    // System.out.println("NetWorth = " + portfolio.netWorth(newFakeStockService()));
+    // System.out.println("NetWorth = " + portfolio.netWorth(new FakeStockService()));
     System.out.println("NetWorth = " + portfolio.netWorth(new NationalStockService()));
   }
 }

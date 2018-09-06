@@ -12,3 +12,5 @@ echo "***************************************"
 echo "Running..."
 echo "***************************************"
 java -cp .:./lib/json-20180130.jar Portfolio
+
+# java -cp .:./lib/json-20180130.jar -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.port=<Port> Portfolio
