@@ -24,26 +24,7 @@ public class ConcurrentServer implements AutoCloseable {
 			Socket clientSocket = server.accept();
 			CompletableFuture.runAsync(() -> {
 				try {
-					System.out.println(Thread.currentThread() + " Received Connection from " + clientSocket);
-					BufferedReader is = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-					PrintStream os = new PrintStream(clientSocket.getOutputStream());
-					// As long as we receive data, echo that data back to the client.
-					String line = null;
-					while ((line = is.readLine()) != null) {
-						System.out.println(Thread.currentThread() + " Server Got => " + line);
-						if (line.equalsIgnoreCase("QUIT"))
-							break;
-						else {
-							System.out.println(Thread.currentThread() + " Server echoing line back => " + line);
-							os.println(line);
-							os.flush();
-						}
-					}
-					System.out.println(Thread.currentThread() + " Server Closing Connection by Sending => Ok");
-					os.println("Ok");
-					os.flush();
-					is.close();
-					os.close();
+					Server.handleClient(clientSocket);
 				} catch (IOException e) {
 					e.printStackTrace();
 				}

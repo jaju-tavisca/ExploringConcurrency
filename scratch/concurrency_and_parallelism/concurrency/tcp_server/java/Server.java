@@ -21,34 +21,42 @@ public class Server implements AutoCloseable {
 		// connections.
 		// Open input and output streams
 		while (true) {
-			System.out.println(Thread.currentThread() + " Waiting for Incoming connections...");
-			try (Socket clientSocket = server.accept()) {
-				System.out.println(Thread.currentThread() + " Received Connection from " + clientSocket);
-				BufferedReader is = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-				PrintStream os = new PrintStream(clientSocket.getOutputStream());
-				// As long as we receive data, echo that data back to the client.
-				String line = null;
-				while ((line = is.readLine()) != null) {
-					System.out.println(Thread.currentThread() + " Server Got => " + line);
-					if (line.equalsIgnoreCase("QUIT"))
-						break;
-					else {
-						System.out.println(Thread.currentThread() + " Server echoing line back => " + line);
-						os.println(line);
-						os.flush();
-					}
-				}
-				System.out.println(Thread.currentThread() + " Server Closing Connection by Sending => Ok");
-				os.println("Ok");
-				os.flush();
-				is.close();
-				os.close();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			acceptAndHandleClient(server);
 		}
 	}
-	
+
+	static void acceptAndHandleClient(ServerSocket server) {
+		System.out.println(Thread.currentThread() + " Waiting for Incoming connections...");
+		try (Socket clientSocket = server.accept()) {
+			handleClient(clientSocket);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	static void handleClient(Socket clientSocket) throws IOException {
+		System.out.println(Thread.currentThread() + " Received Connection from " + clientSocket);
+		BufferedReader is = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+		PrintStream os = new PrintStream(clientSocket.getOutputStream());
+		// As long as we receive data, echo that data back to the client.
+		String line = null;
+		while ((line = is.readLine()) != null) {
+			System.out.println(Thread.currentThread() + " Server Got => " + line);
+			if (line.equalsIgnoreCase("QUIT"))
+				break;
+			else {
+				System.out.println(Thread.currentThread() + " Server echoing line back => " + line);
+				os.println(line);
+				os.flush();
+			}
+		}
+		System.out.println(Thread.currentThread() + " Server Closing Connection by Sending => Ok");
+		os.println("Ok");
+		os.flush();
+		is.close();
+		os.close();
+	}
+
 	public void close() throws IOException {
 		server.close();
 	}
