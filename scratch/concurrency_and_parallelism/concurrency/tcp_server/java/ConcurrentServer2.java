@@ -6,10 +6,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.UnknownHostException;
-import java.util.concurrent.CompletableFuture;
-import java.util.*;
-import java.util.stream.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
 
 public class ConcurrentServer2 implements AutoCloseable {
     private final ServerSocket server;
