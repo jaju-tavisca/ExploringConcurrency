@@ -1,6 +1,6 @@
 # Concurrency And Parallelism
 
-Concurrency and Parallelism, these two words have been used quite synonomously and have been easily interchanged with the other.  But many, like Phil Wadler, Simon Marlow have given very precise distinctions between these.  In this melody, we will delineate concurrency and parallelism using two problems.
+Concurrency and Parallelism, these two words have been used quite synonomously and have been easily interchanged with the other.  But many, like Phil Wadler, Simon peyton Jones and Simon Marlow have given very precise distinctions between these.  In this melody, we will delineate concurrency and parallelism using two problems.
 
 * _Concurrency_: Creating an Echo TCP-Server
 * _Parallelism_: Splitting a Task (I/O or Computational task)
@@ -245,7 +245,7 @@ public class Server implements AutoCloseable {
 
 **BRAHMA** So, this is Concurrency.  
 
-**BRAHMA** Let me now show you an example of Parallelism by splitting an I/O task.  Lets say we have ```Porfolio``` comprising of several stocks.  In order to calculate the net worth of a portfolio, it uses a proxy ```NationalStockService``` which reaches out over the network to get price of stocks it holds.  
+**BRAHMA** Let me show an example of Parallelism by splitting an I/O task.  Lets say we have ```Porfolio``` comprising of several stocks.  In order to calculate the net worth of a portfolio, it uses a proxy ```NationalStockService``` which reaches out over the network to get price of stocks it holds.  
 
 ```
 public class Portfolio {
@@ -370,7 +370,7 @@ NetWorth = 17371.8
 
 **KRISHNA** How is this parallel?  In concurrency also we had threads and in the parallel version also we had threads...so how is this parallel?
 
-**KRISHNA** Let me show you what I do this to the earlier concurrent version of the server.  I will now re-write the ```start()``` method as
+**KRISHNA** I can use code similar to yours and re-write parts of the earlier concurrent version of the server.  I will now change the ```start()``` method as:
 
 ```java
 public class ConcurrentServer2 implements AutoCloseable {
@@ -392,7 +392,7 @@ public class ConcurrentServer2 implements AutoCloseable {
 }
 ```
 
-**KRISHNA** When I run this, I'll be spawning 4 parallel accepts in 4 different threads.
+**KRISHNA** When I run this, I'll be spawning 4 parallel ```accept()```s in 4 different threads.
 
 ```shell
 Server
@@ -419,16 +419,17 @@ Server Sent: HELO2
 Server Sent: HELO4
 Server Sent: HELO3
 ```
+
 **KRISHNA** So would this be parallel or concurrent?
 
 **BRAHMA** Though the form is different, this is still concurrent and not parallel.  Lets reflect on this.
 
 ## Reflections
 
-**BRAHMA** In this concurrent server implementation, though we have used ```parallel()``` switch of the ```Stream``` to accept the connections, it is not an important thing to decide, whether this is parallel or concurrent.  It is still concurrent.
+**BRAHMA** In this concurrent server implementation, though we have used ```parallel()``` switch of the ```Stream``` to accept the connections, it is not an important thing to decide, whether this is parallel or concurrent.  It is still concurrent.  As the server's main thread is now freed, a new client connecting to the server will never know, how many other clients are currently being served at the same time.  
 
 **KRISHNA** I see what you say...it is important to realize that in the case of earlier concurrent server as well as in this implementation of concurrent server, each of the threads created are serving a particular client oblivious to each other's existence and in no way related to each other.  They operate independently of each other.  Whereas in the splitting I/O task case for getting stock prices, each of the thread was spawned and then later the results of each thread where collected to get the result back as a list of stock prices.  So, there is a co-ordinating mechanism that orchestrates this splitting of tasks and subsequently the collection of results.  This I think is the most important factor that delineates Concurrency and Parallelism.
 
-**BRAHMA** Yes, indeed! The goal of Parallelism is Performance while preserving the functionality of the system, whereas the goal of concurrency is Responsiveness.  Though both, Concurrency and Parallelism use threads for their implementations, it is important to determine whether these threads interact with each other or run independently of each other.
+**BRAHMA** Yes, indeed! The goal of Parallelism is Performance while preserving the functionality of the system, whereas the goal of concurrency is Responsiveness.  Though both, Concurrency and Parallelism use threads for their implementations, it is important to determine whether these threads interact with each other or run independently of each other.  
 
-**KRISHNA** Lets move to the next melody.
+**KRISHNA** Also, one can mix concurrency and parallelism in the same program and make it responsive and performant at the same time.  Lets move to the next melody.
