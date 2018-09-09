@@ -212,30 +212,27 @@ Thread[main,5,main] Server Closing Connection by Sending => Ok
 
 **KRISHNA** Oh, of what use is such a server! 
 
-**BRAMHA** Exactly, so lets make it concurrent, and the way I do it here is wrap the method call ```handleNewClient(...)``` in a ```CompleteableFuture```.  Using traditional constructs,  a new thread would have been spawned and the server would serve that client in that thread.  But we could do the same using a more modern construct - ```CompleteableFuture```
+**BRAMHA** Exactly, so lets make it concurrent, and the way I do it here is wrap the method call ```handleNewClient(...)``` in a ```CompleteableFuture```.  If I were to use traditional ```Thread``` construct, a new thread need to be spawned and the server would serve that client on that thread.  But we could do the same using a more modern construct - ```CompleteableFuture```
 
 ```java
 public class Server implements AutoCloseable {
   private final ServerSocket server;
   ...
   ...  
-  public void start() {
-    System.out.println(Thread.currentThread() + " Server Ready: " + server);
-    while (true) {
-      System.out.println(Thread.currentThread() + " Waiting for Incoming connections...");
-      try {
-        Socket clientSocket = server.accept();
-        CompletableFuture.runAsync(() -> {
-          try { 
-            handleNewConnection(clientSocket);
-            clientSocket.close();
-          } catch (IOException e) {
-            throw new RuntimeException(e);
-          } 
-        });
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
+  private void acceptAndHandleClient(ServerSocket server) {
+    System.out.println(Thread.currentThread() + " Waiting for Incoming connections...");
+    try {
+      Socket clientSocket = server.accept();
+      CompletableFuture.runAsync(() -> {
+        try { 
+          handleNewClient(clientSocket);
+          clientSocket.close();
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        } 
+      });
+    } catch (IOException e) {
+      e.printStackTrace();
     }
   }
   ...
@@ -265,8 +262,6 @@ public class Portfolio {
     long startTime = System.currentTimeMillis();
     List<Double> prices = stocks.entrySet()
       .stream()
-      // comment or uncomment the parallel() call below and see the difference
-      .parallel()
       .collect(ArrayList<Double>::new, (acc, entry) -> {
         String ticker = entry.getKey();
         try {
@@ -296,6 +291,58 @@ public class Portfolio {
   }
 }
 ```
+
+**BRAHMA** As you can see there is nothing here that runs this code in parallel - all the I/O requests are made on the ```main thread```. For each stock ticker, it gets the prices one after another and then reduces the prices to net worth.
+
+```shell
+> java Portfolio
+
+Stocks = {MSFT=40, GOOG=100, AAPL=20, YHOO=30, ORCL=40, AMZN=50}
+Thread[main,5,main] Getting Price for => MSFT
+Thread[main,5,main] Returning Price for => MSFT price = 27.37
+Thread[main,5,main] Getting Price for => GOOG
+Thread[main,5,main] Returning Price for => GOOG price = 102.31
+Thread[main,5,main] Getting Price for => AAPL
+Thread[main,5,main] Returning Price for => AAPL price = 54.09
+Thread[main,5,main] Getting Price for => YHOO
+Thread[main,5,main] Returning Price for => YHOO price = 24.31
+Thread[main,5,main] Getting Price for => ORCL
+Thread[main,5,main] Returning Price for => ORCL price = 70.07
+Thread[main,5,main] Getting Price for => AMZN
+Thread[main,5,main] Returning Price for => AMZN price = 25.05
+
+Overall Time 3748(ms):
+NetWorth = 17192.199999999997
+```
+
+**BRAHMA** Now, Lets make this parallel.  In order to do this, I'll simply add this parallel() switch and this code now runs in parallel don't have to change the structure of the code.
+
+```java highlight:9
+public class Portfolio {
+  ...
+  ...
+  public Double netWorth(StockService stockService) throws Exception {
+    ...
+    ...
+    List<Double> prices = stocks.entrySet()
+      .stream()
+      .parallel()
+      .collect(ArrayList<Double>::new, (acc, entry) -> {
+        String ticker = entry.getKey();
+        try {
+          acc.add(stockService.getPrice(ticker) * entry.getValue());  
+        } catch (Exception e) {
+          e.printStackTrace();
+        }
+      }, ArrayList::addAll);
+     ...
+     ...
+  }
+  ...
+  ...
+}  
+```
+
 
 ## Reflections
 
