@@ -1,7 +1,16 @@
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.net.InetAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.UnknownHostException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 
 public class ConcurrentServer2 implements AutoCloseable {
     private final ServerSocket server;
@@ -17,11 +26,28 @@ public class ConcurrentServer2 implements AutoCloseable {
         Collections.nCopies(4, server)
           .stream()
           .parallel()
-          .forEach(Server::acceptAndHandleClient);
+          .forEach(this::acceptAndHandleClient);
       }
     }
     
-    private void handleNewConnection(Socket clientSocket) throws IOException {
+  	private void acceptAndHandleClient(ServerSocket server) {
+  		System.out.println(Thread.currentThread() + " Waiting for Incoming connections...");
+      try {
+  			Socket clientSocket = server.accept();
+        CompletableFuture.runAsync(() -> {
+          try { 
+            handleNewClient(clientSocket);
+            clientSocket.close();
+          } catch (IOException e) {
+            throw new RuntimeException(e);
+          } 
+        });
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+  	}
+    
+    private void handleNewClient(Socket clientSocket) throws IOException {
   		System.out.println(Thread.currentThread() + " Received Connection from " + clientSocket);
       BufferedReader is = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
   	  PrintStream os = new PrintStream(clientSocket.getOutputStream());
