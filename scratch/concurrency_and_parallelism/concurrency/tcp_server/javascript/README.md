@@ -2,7 +2,12 @@
 
 JavaScript is based upon a single event loop which handles one event at a time. 
 
-In Node.js the default is that everything runs in parallel, except CPU intensive operations. This means is that all I/O code in Node.js is non-blocking, while all non-I/O code in Node.js is blocking.  This means that CPU heavy tasks will block other tasks from being executed. 
+In Node.js the default is that everything runs in parallel, except CPU intensive operations. This means is that all I/O code in Node.js is non-blocking, while all non-I/O code in Node.js is blocking.  This means that CPU heavy tasks will block other tasks from being executed. If you want to know how the single event loop works in Node.js, please look at the following videos:
+
+[![Morning Keynote - Everything you need to know about Node.js Event Loop - Bert Belder - IBM](http://img.youtube.com/vi/PNa9OMajw9w/0.jpg)](http://www.youtube.com/watch?v=PNa9OMajw9w "Morning Keynote - Everything you need to know about Node.js Event Loop - Bert Belder - IBM")
+
+[![Phillip Roberts: What the heck is Event Loop anyway? JSConf EU](http://img.youtube.com/vi/8aGhZQkoFbQ/0.jpg)](http://www.youtube.com/watch?v=8aGhZQkoFbQ "Phillip Roberts: What the heck is Event Loop anyway? JSConf EU")
+
 
 ## Problem
 

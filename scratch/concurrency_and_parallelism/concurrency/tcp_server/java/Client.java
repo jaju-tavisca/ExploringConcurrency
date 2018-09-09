@@ -24,7 +24,7 @@ public class Client implements AutoCloseable {
 			os.writeBytes(message + "\n");
 			os.flush();
 			// keep on reading from/to the socket till we receive the "Ok" from Server,
-			// once we received that then we want to break.
+			// once we received that we break.
 			String responseLine = is.readLine();
 			if (responseLine != null) {
 				System.out.println("Server Sent: " + responseLine);
