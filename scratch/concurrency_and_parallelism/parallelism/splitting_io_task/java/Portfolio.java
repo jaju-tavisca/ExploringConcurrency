@@ -36,7 +36,7 @@ public class Portfolio {
         tt.interrupt();
         tt.printAllThreadInfo();
         long timeTaken = System.currentTimeMillis() - startTime;
-        System.out.println(String.format("Overall Time %d(ms):", timeTaken));
+        System.out.println(String.format("Overall Time %d(ms)", timeTaken));
         return worth;
     //   });
     // pool.shutdown();
