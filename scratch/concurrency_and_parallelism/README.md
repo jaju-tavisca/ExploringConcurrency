@@ -77,7 +77,7 @@ Thread[main,5,main] Server Ready: ServerSocket[addr=localhost/127.0.0.1,localpor
 Thread[main,5,main] Waiting for Incoming connections...
 ```
 
-**BRAMHA** Let me use ```telnet``` as one of the clients.  As you can see, the ```main thread``` is servicing this incoming request.  
+**BRAMHA** Let me use ```telnet``` as one of the clients and send ```HELO```.  It echo that back.  
 
 ```shell 
 $> telnet localhost 8080
@@ -90,14 +90,15 @@ HELO
 HELO
 ```
 
-**BRAMHA** Look at the server:
+**BRAMHA** Look at the server log, the ```main thread``` is servicing this incoming request:
+
 ```shell
 Thread[main,5,main] Received Connection from Socket[addr=/127.0.0.1,port=49314,localport=8080]
 Thread[main,5,main] Server Got => HELO
 Thread[main,5,main] Server echoing line back => HELO
 ```
 
-**BRAMHA** Any other client or telnet sessions will wait for the connection to be accepted until the earlier client session ```QUIT```s.  I can also do this by running 4 clients who try to connect at the same time.
+**BRAMHA** I can also add more clients that connect to this server and I do this by running 4 clients who try to connect at the same time.
 
 ```java
 public class Client implements AutoCloseable {
@@ -159,7 +160,7 @@ public class Client implements AutoCloseable {
 }
 ```
 
-**BRAMHA** I'll run the client that makes 4 connections to this server.
+**BRAMHA** As you can see, these are simply waiting in the queue to be served.  
 
 ```shell
 $> java Client
@@ -173,10 +174,10 @@ Sending to Server: HELO1
 Sending to Server: HELO3
 ```
 
-**BRAMHA** As you can see, these are simply waiting in the queue to be served.  Unless I ```QUIT``` the telnet session, they won't be served, because the ```main thread``` is busy serving it and does not even blink for other incoming requests.
+**BRAMHA** Unless I ```QUIT``` the telnet session, they won't be served, because the ```main thread``` is busy serving it and does not even blink for other incoming requests.
 
 ```shell
- telnet localhost 8080
+$> telnet localhost 8080
 Trying ::1...
 Connection failed: Connection refused
 Trying 127.0.0.1...
@@ -237,6 +238,7 @@ public class Server implements AutoCloseable {
   }
   ...
   ...
+}
 ```
 
 **KRISHNA** So, here each connection gets its own thread and they run oblivious of each other when they get scheduled.  This way no new or existing client is blocked because the server is working with all client(s) at the same time, each in its own thread.
@@ -311,11 +313,11 @@ Thread[main,5,main] Returning Price for => ORCL price = 70.07
 Thread[main,5,main] Getting Price for => AMZN
 Thread[main,5,main] Returning Price for => AMZN price = 25.05
 
-Overall Time 3748(ms):
+Overall Time 3748(ms)
 NetWorth = 17192.199999999997
 ```
 
-**BRAHMA** Now, Lets make this parallel.  In order to do this, I'll simply add this parallel() switch and this code now runs in parallel don't have to change the structure of the code.
+**BRAHMA** Now, Lets make this parallel.  In order to do this, I'll simply turn on the ```parallel()``` switch on the ```Stream``` and this code now runs in parallel.
 
 ```java highlight:9
 public class Portfolio {
@@ -340,14 +342,93 @@ public class Portfolio {
   }
   ...
   ...
-}  
+} 
 ```
 
+**BRAHMA** The output shows that each I/O request is happening on a separate thread and the overall completion time is 2765 ms, approx 1 sec earlier than the sequential version.
+
+```shell
+Stocks = {MSFT=40, GOOG=100, AAPL=20, YHOO=30, ORCL=40, AMZN=50}
+Thread[ForkJoinPool.commonPool-worker-9,5,main] Getting Price for => YHOO
+Thread[ForkJoinPool.commonPool-worker-11,5,main] Getting Price for => MSFT
+Thread[ForkJoinPool.commonPool-worker-2,5,main] Getting Price for => AMZN
+Thread[main,5,main] Getting Price for => ORCL
+Thread[ForkJoinPool.commonPool-worker-2,5,main] Returning Price for => AMZN price = 28.21
+Thread[ForkJoinPool.commonPool-worker-11,5,main] Returning Price for => MSFT price = 21.89
+Thread[ForkJoinPool.commonPool-worker-9,5,main] Returning Price for => YHOO price = 29.33
+Thread[main,5,main] Returning Price for => ORCL price = 72.22
+Thread[ForkJoinPool.commonPool-worker-11,5,main] Getting Price for => GOOG
+Thread[ForkJoinPool.commonPool-worker-11,5,main] Returning Price for => GOOG price = 102.45
+Thread[ForkJoinPool.commonPool-worker-11,5,main] Getting Price for => AAPL
+Thread[ForkJoinPool.commonPool-worker-11,5,main] Returning Price for => AAPL price = 53.6
+
+Overall Time 2765(ms)
+NetWorth = 17371.8
+```
+
+**BRAHMA** This is Parallel.
+
+**KRISHNA** How is this parallel?  In concurrency also we had threads and in the parallel version also we had threads...so how is this parallel?
+
+**KRISHNA** Let me show you what I do this to the earlier concurrent version of the server.  I will now re-write the ```start()``` method as
+
+```java
+public class ConcurrentServer2 implements AutoCloseable {
+  private final ServerSocket server;
+  ...
+  ...
+  public void start() {
+    System.out.println(Thread.currentThread() + " Server Ready: " + server);
+    while (true) {
+      Collections.nCopies(4, server)
+        .stream()
+        .parallel()
+        .forEach(this::acceptAndHandleClient);
+      }
+    }
+  }
+  ...
+  ...
+}
+```
+
+**KRISHNA** When I run this, I'll be spawning 4 parallel accepts in 4 different threads.
+
+```shell
+Server
+Thread[main,5,main] Server Ready: ServerSocket[addr=localhost/127.0.0.1,localport=8080]
+Thread[main,5,main] Waiting for Incoming connections...
+Thread[ForkJoinPool.commonPool-worker-11,5,main] Waiting for Incoming connections...
+Thread[ForkJoinPool.commonPool-worker-2,5,main] Waiting for Incoming connections...
+Thread[ForkJoinPool.commonPool-worker-9,5,main] Waiting for Incoming connections...
+```
+
+**KRISHNA** And the clients don't have to wait any longer.
+
+```shell
+Thread = Thread[Thread-1,5,main]
+Thread = Thread[Thread-2,5,main]
+Thread = Thread[Thread-0,5,main]
+Thread = Thread[Thread-3,5,main]
+Sending to Server: HELO2
+Sending to Server: HELO1
+Sending to Server: HELO3
+Sending to Server: HELO4
+Server Sent: HELO1
+Server Sent: HELO2
+Server Sent: HELO4
+Server Sent: HELO3
+```
+**KRISHNA** So would this be parallel or concurrent?
+
+**BRAHMA** Though the form is different, this is still concurrent and not parallel.  Lets reflect on this.
 
 ## Reflections
 
+**BRAHMA** In this concurrent server implementation, though we have used ```parallel()``` switch of the ```Stream``` to accept the connections, it is not an important thing to decide, whether this is parallel or concurrent.  It is still concurrent.
 
-**BRAHMA** 
+**KRISHNA** I see what you say...it is important to realize that in the case of earlier concurrent server as well as in this implementation of concurrent server, each of the threads created are serving a particular client oblivious to each other's existence and in no way related to each other.  They operate independently of each other.  Whereas in the splitting I/O task case for getting stock prices, each of the thread was spawned and then later the results of each thread where collected to get the result back as a list of stock prices.  So, there is a co-ordinating mechanism that orchestrates this splitting of tasks and subsequently the collection of results.  This I think is the most important factor that delineates Concurrency and Parallelism.
 
-**KRISHNA** 
+**BRAHMA** Yes, indeed! The goal of Parallelism is Performance while preserving the functionality of the system, whereas the goal of concurrency is Responsiveness.  Though both, Concurrency and Parallelism use threads for their implementations, it is important to determine whether these threads interact with each other or run independently of each other.
 
+**KRISHNA** Lets move to the next melody.
