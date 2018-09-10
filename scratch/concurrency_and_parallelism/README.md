@@ -1,6 +1,6 @@
 # Concurrency And Parallelism
 
-Concurrency and Parallelism, these two words have been used quite synonomously and have been easily interchanged with the other.  But many, like Phil Wadler, Simon peyton Jones and Simon Marlow have given very precise distinctions between these.  In this melody, we will delineate concurrency and parallelism using two problems.
+Concurrency and Parallelism, these two words have been used quite synonomously and have been easily interchanged with the other.  But many, like Phil Wadler, Simon Peyton Jones and Simon Marlow have given very precise distinctions between these.  In this melody, we will delineate concurrency and parallelism using two problems.
 
 * _Concurrency_: Creating an Echo TCP-Server
 * _Parallelism_: Splitting a Task (I/O or Computational task)
@@ -77,7 +77,7 @@ Thread[main,5,main] Server Ready: ServerSocket[addr=localhost/127.0.0.1,localpor
 Thread[main,5,main] Waiting for Incoming connections...
 ```
 
-**BRAMHA** Let me use ```telnet``` as one of the clients and send ```HELO```.  It echo that back.  
+**BRAMHA** Let me use ```telnet``` as one of the clients and send ```HELO```.  It echoes that back.  
 
 ```shell 
 $> telnet localhost 8080
@@ -211,9 +211,9 @@ Thread[main,5,main] Server Closing Connection by Sending => Ok
 ...
 ```
 
-**KRISHNA** Oh, of what use is such a server! 
+**KRISHNA** Oh, of what use is such a server?
 
-**BRAMHA** Exactly, so lets make it concurrent, and the way I do it here is wrap the method call ```handleNewClient(...)``` in a ```CompleteableFuture```.  If I were to use traditional ```Thread``` construct, a new thread need to be spawned and the server would serve that client on that thread.  But we could do the same using a more modern construct - ```CompleteableFuture```
+**BRAMHA** Exactly, so lets make it concurrent, and the way I do it here is wrap the method call ```handleNewClient(...)``` in a ```CompletableFuture```.  If I were to use the traditional ```Thread``` construct, a new thread needs to be spawned and the server would serve that client on that thread.  But we could do the same using a more modern construct - ```CompletableFuture```
 
 ```java
 public class Server implements AutoCloseable {
@@ -245,7 +245,7 @@ public class Server implements AutoCloseable {
 
 **BRAHMA** So, this is Concurrency.  
 
-**BRAHMA** Let me now show you an example of Parallelism by splitting an I/O task.  Lets say we have ```Porfolio``` comprising of several stocks.  In order to calculate the net worth of a portfolio, it uses a proxy ```NationalStockService``` which reaches out over the network to get price of stocks it holds.  
+**BRAHMA** Let me now show you an example of Parallelism by splitting an I/O task.  Lets say we have a ```Porfolio``` comprising of several stocks.  In order to calculate the net worth of a portfolio, it uses a proxy ```NationalStockService``` which reaches out over the network to get prices of stocks it holds.  
 
 ```java
 public class Portfolio {
@@ -317,7 +317,7 @@ Overall Time 3748(ms)
 NetWorth = 17192.199999999997
 ```
 
-**BRAHMA** Now, Lets make this parallel.  In order to do this, I'll simply turn on the ```parallel()``` switch on the ```Stream``` and this code now runs in parallel.  Internally, threads are unleashed and each I/O request is now made on a separate thread.
+**BRAHMA** Now, lets make this parallel.  In order to do this, I'll simply turn on the ```parallel()``` switch on the ```Stream``` and this code now runs in parallel.  Internally, threads are unleashed and each I/O request is now made on a separate thread.
 
 ```java { highlight: [9]}
 public class Portfolio {
@@ -426,7 +426,7 @@ Server Sent: HELO3
 
 ## Reflections
 
-**BRAHMA** In this concurrent server implementation, though we have used ```parallel()``` switch of the ```Stream``` to accept the connections, it is not an important thing to decide, whether this is parallel or concurrent.  It is still concurrent.  Apart from Server's main thread, there are other threads that can accept new client connections and are not held hostage by a single client, as we still have our ```CompletableFuture``` that handles the client in a separate thread.  So, a new client connecting to the server will never know, how many other clients are currently being served at the same time.  
+**BRAHMA** In this concurrent server implementation, though we have used the ```parallel()``` switch of the ```Stream``` to accept the connections, it is not an important thing to decide, whether this is parallel or concurrent.  It is still concurrent.  Apart from Server's main thread, there are other threads that can accept new client connections and are not held hostage by a single client, as we still have our ```CompletableFuture``` that handles the client in a separate thread.  So, a new client connecting to the server will never know, how many other clients are currently being served at the same time.  
 
 **KRISHNA** I see what you say...it is important to realize that in the case of earlier concurrent server as well as in this implementation of concurrent server, each of the threads created are serving a particular client oblivious to each other's existence and in no way related to each other.  They operate independently of each other.  Whereas in the splitting I/O task case for getting stock prices, each of the thread was spawned and then later the results of each thread where collected to get the result back as a list of stock prices.  So, there is a need for an explicit co-ordinating mechanism that orchestrates this splitting of tasks and subsequently the collection of results.  This I think is the most important factor that delineates Concurrency and Parallelism.
 
