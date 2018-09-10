@@ -5,7 +5,7 @@ Concurrency and Parallelism, these two words have been used quite synonomously a
 * _Concurrency_: Creating an Echo TCP-Server
 * _Parallelism_: Splitting a Task (I/O or Computational task)
 
-**BRAMHA** Lets tackle Concurrency by looking at this single-threaded Echo TCP-Server in Java.  It waits for connections after creating a ```ServerSocket```.  Once it accepts an incoming socket connection from a client, it goes into an infinite loop, serving that client.  
+**BRAMHA** Lets tackle Concurrency by looking at this single-threaded Echo TCP-Server in Java.  It waits for connections after creating a ```ServerSocket```.  Once it accepts an incoming socket connection from a client, it goes into an infinite loop, serving that client, by echoing whatever the client sends, except for a ```QUIT``` message.  
 
 ```java
 public class Server implements AutoCloseable {
@@ -36,7 +36,7 @@ public class Server implements AutoCloseable {
     System.out.println(Thread.currentThread() + " Received Connection from " + clientSocket);
     BufferedReader is = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
     PrintStream os = new PrintStream(clientSocket.getOutputStream());
-    // Echo data back to the client.
+    // Echo data back to the client, except for QUIT.
     String line = null;
     while ((line = is.readLine()) != null) {
       System.out.println(Thread.currentThread() + " Server Got => " + line);
@@ -174,7 +174,7 @@ Sending to Server: HELO1
 Sending to Server: HELO3
 ```
 
-**BRAMHA** Unless I ```QUIT``` the telnet session, they won't be served, because the ```main thread``` is busy serving it and does not even blink for other incoming requests.
+**BRAMHA** Unless I send ```QUIT``` from the telnet session, they won't be served, because the ```main thread``` is busy serving it and does not even blink for other incoming requests.
 
 ```shell
 $> telnet localhost 8080
@@ -245,9 +245,9 @@ public class Server implements AutoCloseable {
 
 **BRAHMA** So, this is Concurrency.  
 
-**BRAHMA** Let me show an example of Parallelism by splitting an I/O task.  Lets say we have ```Porfolio``` comprising of several stocks.  In order to calculate the net worth of a portfolio, it uses a proxy ```NationalStockService``` which reaches out over the network to get price of stocks it holds.  
+**BRAHMA** Let me now show you an example of Parallelism by splitting an I/O task.  Lets say we have ```Porfolio``` comprising of several stocks.  In order to calculate the net worth of a portfolio, it uses a proxy ```NationalStockService``` which reaches out over the network to get price of stocks it holds.  
 
-```
+```java
 public class Portfolio {
   private Map<String, Integer> stocks = new HashMap<>();
   
@@ -294,7 +294,7 @@ public class Portfolio {
 }
 ```
 
-**BRAHMA** As you can see there is nothing here that runs this code in parallel - all the I/O requests are made on the ```main thread```. For each stock ticker, it gets the prices one after another and then reduces the prices to net worth.
+**BRAHMA** As you can see there is nothing here that runs this code in parallel - all the I/O requests are made on the ```main thread```. For each stock ticker, it gets the prices one after another sequentially and then reduces the prices to net worth.
 
 ```shell
 > java Portfolio
@@ -317,9 +317,9 @@ Overall Time 3748(ms)
 NetWorth = 17192.199999999997
 ```
 
-**BRAHMA** Now, Lets make this parallel.  In order to do this, I'll simply turn on the ```parallel()``` switch on the ```Stream``` and this code now runs in parallel.
+**BRAHMA** Now, Lets make this parallel.  In order to do this, I'll simply turn on the ```parallel()``` switch on the ```Stream``` and this code now runs in parallel.  Internally, threads are unleashed and each I/O request is now made on a separate thread.
 
-```java highlight:9
+```java { highlight: [9]}
 public class Portfolio {
   ...
   ...
@@ -370,10 +370,10 @@ NetWorth = 17371.8
 
 **KRISHNA** How is this parallel?  In concurrency also we had threads and in the parallel version also we had threads...so how is this parallel?
 
-**KRISHNA** I can use code similar to yours and re-write parts of the earlier concurrent version of the server.  I will now change the ```start()``` method as:
+**KRISHNA** I would like to change the earlier concurrent server code similar to yours and re-write parts of it.  I will now change the ```start()``` method as:
 
 ```java
-public class ConcurrentServer2 implements AutoCloseable {
+public class Server implements AutoCloseable {
   private final ServerSocket server;
   ...
   ...
@@ -426,9 +426,9 @@ Server Sent: HELO3
 
 ## Reflections
 
-**BRAHMA** In this concurrent server implementation, though we have used ```parallel()``` switch of the ```Stream``` to accept the connections, it is not an important thing to decide, whether this is parallel or concurrent.  It is still concurrent.  As the server's main thread is now freed, a new client connecting to the server will never know, how many other clients are currently being served at the same time.  
+**BRAHMA** In this concurrent server implementation, though we have used ```parallel()``` switch of the ```Stream``` to accept the connections, it is not an important thing to decide, whether this is parallel or concurrent.  It is still concurrent.  Apart from Server's main thread, there are other threads that can accept new client connections and are not held hostage by a single client, as we still have our ```CompletableFuture``` that handles the client in a separate thread.  So, a new client connecting to the server will never know, how many other clients are currently being served at the same time.  
 
-**KRISHNA** I see what you say...it is important to realize that in the case of earlier concurrent server as well as in this implementation of concurrent server, each of the threads created are serving a particular client oblivious to each other's existence and in no way related to each other.  They operate independently of each other.  Whereas in the splitting I/O task case for getting stock prices, each of the thread was spawned and then later the results of each thread where collected to get the result back as a list of stock prices.  So, there is a co-ordinating mechanism that orchestrates this splitting of tasks and subsequently the collection of results.  This I think is the most important factor that delineates Concurrency and Parallelism.
+**KRISHNA** I see what you say...it is important to realize that in the case of earlier concurrent server as well as in this implementation of concurrent server, each of the threads created are serving a particular client oblivious to each other's existence and in no way related to each other.  They operate independently of each other.  Whereas in the splitting I/O task case for getting stock prices, each of the thread was spawned and then later the results of each thread where collected to get the result back as a list of stock prices.  So, there is a need for an explicit co-ordinating mechanism that orchestrates this splitting of tasks and subsequently the collection of results.  This I think is the most important factor that delineates Concurrency and Parallelism.
 
 **BRAHMA** Yes, indeed! The goal of Parallelism is Performance while preserving the functionality of the system, whereas the goal of concurrency is Responsiveness.  Though both, Concurrency and Parallelism use threads for their implementations, it is important to determine whether these threads interact with each other or run independently of each other.  
 
